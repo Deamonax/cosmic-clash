@@ -10,18 +10,19 @@ let gameOver = false;
 let background;
 let backgroundSpeed = 2;
 let particleManager;
-let explosions = []; // Array to keep track of active explosions
+let explosions = [];
 let isMobile = false;
 let isTouching = false;
 let touchX, touchY;
 let isFiring = false;
+let respawnButton;
 
 const enemyTypes = [
-    { key: 'nebulaWraith', scale: 0.2, speed: 40, shootInterval: 2500, bulletSpeed: 120 },
-    { key: 'plasmaBeetle', scale: 0.3, speed: 60, shootInterval: 1800, bulletSpeed: 150 },
-    { key: 'voidWalker', scale: 0.21, speed: 30, shootInterval: 3000, bulletSpeed: 100 },
-    { key: 'darkStinger', scale: 0.25, speed: 70, shootInterval: 1500, bulletSpeed: 180 },
-    { key: 'meteorCrusher', scale: 0.21, speed: 20, shootInterval: 3500, bulletSpeed: 90 }
+    { key: 'nebulaWraith', scale: 0.22, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF0000, bulletScale: 0.3 },
+    { key: 'plasmaBeetle', scale: 0.28, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150, bulletColor: 0x00FF00, bulletScale: 0.4 },
+    { key: 'voidWalker', scale: 0.25, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100, bulletColor: 0x0000FF, bulletScale: 0.4 },
+    { key: 'darkStinger', scale: 0.31, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180, bulletColor: 0xFFFF00, bulletScale: 0.5 },
+    { key: 'meteorCrusher', scale: 0.19, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90, bulletColor: 0xFF00FF, bulletScale: 0.35 }
 ];
 
 // Game configuration
@@ -159,8 +160,8 @@ function update() {
         if (this.time.now > enemy.lastFired) {
             let bullet = enemyBullets.create(enemy.x, enemy.y + 20, 'bullet');
             bullet.setVelocityY(enemy.bulletSpeed);
-            bullet.setScale(0.3);
-            bullet.setTint(0x00FF00);
+            bullet.setScale(enemy.bulletScale);
+            bullet.setTint(enemy.bulletColor);
             enemy.lastFired = this.time.now + enemy.shootInterval;
         }
     });
@@ -192,7 +193,7 @@ function tryToFire() {
     if (isFiring && !gameOver) {
         let bullet = bullets.create(player.x, player.y - 20, 'bullet');
         bullet.setVelocityY(-300);
-        bullet.setScale(0.5);
+        bullet.setScale(0.4);
         bullet.setTint(0xFF0000);
     }
 }
@@ -232,6 +233,8 @@ function spawnEnemy() {
     enemy.body.setVelocityY(enemyType.speed);
     enemy.shootInterval = enemyType.shootInterval;
     enemy.bulletSpeed = enemyType.bulletSpeed;
+    enemy.bulletColor = enemyType.bulletColor;
+    enemy.bulletScale = enemyType.bulletScale;
     enemy.lastFired = this.time.now + Phaser.Math.Between(0, enemyType.shootInterval);
 }
 
@@ -268,10 +271,43 @@ function playerHitEnemy(player, enemy) {
     this.physics.pause();
     player.setTint(0xff0000);
     createExplosion.call(this, player.x, player.y);
+    
+    // Create respawn button
+    respawnButton = this.add.text(270, 540, 'Respawn', { 
+        fontSize: '32px', 
+        fill: '#fff',
+        backgroundColor: '#000',
+        padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setInteractive();
+    
+    respawnButton.on('pointerdown', respawnPlayer, this);
+
     this.add.text(270, 480, 'Game Over', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 }
 
 function playerHitBullet(player, bullet) {
     bullet.destroy();
     playerHitEnemy.call(this, player);
+}
+
+function respawnPlayer() {
+    gameOver = false;
+    this.physics.resume();
+    player.clearTint();
+    player.setPosition(270, 900);
+    score = 0;
+    scoreText.setText('Score: 0');
+    respawnButton.destroy();
+    
+    // Clear all existing enemies and bullets
+    enemies.clear(true, true);
+    enemyBullets.clear(true, true);
+    bullets.clear(true, true);
+
+    // Remove 'Game Over' text
+    this.children.getAll('type', 'Text').forEach((text) => {
+        if (text.text === 'Game Over') {
+            text.destroy();
+        }
+    });
 }
