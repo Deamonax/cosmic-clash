@@ -1,0 +1,19 @@
+<svg width="25" height="70" viewBox="0 0 50 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Beam Core -->
+  <polygon points="25,0 10,180 25,200 40,180" fill="white" />
+  
+  <!-- Beam Outer Glow -->
+  <polygon points="25,0 5,180 25,200 45,180" fill="none" stroke="cyan" stroke-width="4" />
+  
+  <!-- Beam Edges -->
+  <polygon points="25,0 0,180 25,200 50,180" fill="none" stroke="blue" stroke-width="2" />
+  
+  <!-- Spark Particles -->
+  <circle cx="15" cy="160" r="2" fill="cyan" />
+  <circle cx="35" cy="140" r="2" fill="cyan" />
+  <circle cx="20" cy="120" r="1.5" fill="cyan" />
+  <circle cx="30" cy="100" r="1.5" fill="cyan" />
+  <circle cx="25" cy="80" r="1" fill="cyan" />
+  <circle cx="20" cy="60" r="1" fill="cyan" />
+</svg>
+ 

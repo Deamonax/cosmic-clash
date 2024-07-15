@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+    <circle fill="#FF4500" cx="32" cy="32" r="12"/>
+    <circle fill="#FFA500" cx="32" cy="32" r="8"/>
+    <circle fill="#FFD700" cx="32" cy="32" r="4"/>
+    <polygon fill="#FF4500" points="32,0 36,16 32,8 28,16"/>
+    <polygon fill="#FF4500" points="32,64 36,48 32,56 28,48"/>
+    <polygon fill="#FF4500" points="0,32 16,28 8,32 16,36"/>
+    <polygon fill="#FF4500" points="64,32 48,28 56,32 48,36"/>
+    <polygon fill="#FF4500" points="8,8 20,24 12,16 24,20"/>
+    <polygon fill="#FF4500" points="56,56 44,40 52,48 40,44"/>
+    <polygon fill="#FF4500" points="8,56 24,44 16,52 20,40"/>
+    <polygon fill="#FF4500" points="56,8 40,20 48,12 44,24"/>
+</svg>
