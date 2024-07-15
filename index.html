@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Space Shooter Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cosmic Clash</title>
     <style>
         body {
             margin: 0;
@@ -14,20 +13,47 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            touch-action: none;
+            color: white;
+            font-family: Arial, sans-serif;
         }
         #game-container {
             width: 100%;
             height: 100%;
         }
+        #error-message {
+            text-align: center;
+            display: none;
+        }
     </style>
-    <!-- Phaser 3 Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
-    <!-- Rex Plugins Script -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.79/dist/rexplugins.min.js"></script>
 </head>
 <body>
     <div id="game-container"></div>
-
-    <script src="game.js"></script>
+    <div id="error-message">
+        <h2>Error Loading Game</h2>
+        <p>There was a problem loading the game script. Please try refreshing the page.</p>
+        <p id="error-details"></p>
+    </div>
+    <script>
+        fetch('game.js')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(code => {
+                const script = document.createElement('script');
+                script.textContent = code;
+                document.body.appendChild(script);
+            })
+            .catch(error => {
+                console.error('Error loading game script:', error);
+                document.getElementById('game-container').style.display = 'none';
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-details').textContent = `Error details: ${error.message}`;
+            });
+    </script>
 </body>
 </html>
