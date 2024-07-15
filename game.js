@@ -17,11 +17,11 @@ let touchX, touchY;
 let isFiring = false;
 
 const enemyTypes = [
-    { key: 'nebulaWraith', scale: 0.1, speed: 40, shootInterval: 2500, bulletSpeed: 120 },
-    { key: 'plasmaBeetle', scale: 0.15, speed: 60, shootInterval: 1800, bulletSpeed: 150 },
-    { key: 'voidWalker', scale: 0.12, speed: 30, shootInterval: 3000, bulletSpeed: 100 },
-    { key: 'darkStinger', scale: 0.12, speed: 70, shootInterval: 1500, bulletSpeed: 180 },
-    { key: 'meteorCrusher', scale: 0.11, speed: 20, shootInterval: 3500, bulletSpeed: 90 }
+    { key: 'nebulaWraith', scale: 0.2, speed: 40, shootInterval: 2500, bulletSpeed: 120 },
+    { key: 'plasmaBeetle', scale: 0.3, speed: 60, shootInterval: 1800, bulletSpeed: 150 },
+    { key: 'voidWalker', scale: 0.21, speed: 30, shootInterval: 3000, bulletSpeed: 100 },
+    { key: 'darkStinger', scale: 0.25, speed: 70, shootInterval: 1500, bulletSpeed: 180 },
+    { key: 'meteorCrusher', scale: 0.21, speed: 20, shootInterval: 3500, bulletSpeed: 90 }
 ];
 
 // Game configuration
@@ -69,7 +69,7 @@ function create() {
 
     player = this.physics.add.sprite(270, 900, 'player');
     player.setCollideWorldBounds(true);
-    player.setScale(0.03);
+    player.setScale(0.05);
 
     cursors = this.input.keyboard.createCursorKeys();
 
@@ -159,7 +159,7 @@ function update() {
         if (this.time.now > enemy.lastFired) {
             let bullet = enemyBullets.create(enemy.x, enemy.y + 20, 'bullet');
             bullet.setVelocityY(enemy.bulletSpeed);
-            bullet.setScale(0.2);
+            bullet.setScale(0.3);
             bullet.setTint(0x00FF00);
             enemy.lastFired = this.time.now + enemy.shootInterval;
         }
@@ -192,7 +192,7 @@ function tryToFire() {
     if (isFiring && !gameOver) {
         let bullet = bullets.create(player.x, player.y - 20, 'bullet');
         bullet.setVelocityY(-300);
-        bullet.setScale(0.4);
+        bullet.setScale(0.5);
         bullet.setTint(0xFF0000);
     }
 }
