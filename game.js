@@ -7,7 +7,6 @@ let enemyBullets;
 let score = 0;
 let scoreText;
 let gameOver = false;
-let background;
 let backgroundSpeed = 2;
 let particleManager;
 let explosions = [];
@@ -17,12 +16,16 @@ let touchX, touchY;
 let isFiring = false;
 let respawnButton;
 
+let backgrounds = [];
+let currentBackgroundIndex = 0;
+let backgroundHeight = 1920; // Assuming each background is 1920 pixels tall (twice the screen height)
+
 const enemyTypes = [
-    { key: 'nebulaWraith', scale: 0.22, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF0000, bulletScale: 0.3 },
-    { key: 'plasmaBeetle', scale: 0.28, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150, bulletColor: 0x00FF00, bulletScale: 0.4 },
+    { key: 'nebulaWraith', scale: 0.42, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF0000, bulletScale: 0.4 },
+    { key: 'plasmaBeetle', scale: 0.38, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150, bulletColor: 0x00FF00, bulletScale: 0.3 },
     { key: 'voidWalker', scale: 0.25, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100, bulletColor: 0x0000FF, bulletScale: 0.4 },
-    { key: 'darkStinger', scale: 0.31, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180, bulletColor: 0xFFFF00, bulletScale: 0.5 },
-    { key: 'meteorCrusher', scale: 0.19, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90, bulletColor: 0xFF00FF, bulletScale: 0.35 }
+    { key: 'darkStinger', scale: 0.52, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180, bulletColor: 0xFFFF00, bulletScale: 0.5 },
+    { key: 'meteorCrusher', scale: 0.23, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90, bulletColor: 0xFF00FF, bulletScale: 0.35 }
 ];
 
 // Game configuration
@@ -52,7 +55,9 @@ const game = new Phaser.Game(config);
 
 function preload() {
     console.log("Preload function started");
-    this.load.image('background', 'assets/background.png');
+    this.load.image('background1', 'assets/background.png');
+    this.load.image('background2', 'assets/background2.png');
+    this.load.image('background3', 'assets/background3.png');
     this.load.image('player', 'assets/player.png');
     this.load.svg('bullet', 'assets/shoot.svg');
     this.load.svg('particle', 'assets/particle.svg');
@@ -66,11 +71,17 @@ function preload() {
 
 function create() {
     console.log("Create function started");
-    background = this.add.tileSprite(270, 480, 540, 960, 'background');
+    
+    // Create all three backgrounds
+    backgrounds = [
+        this.add.tileSprite(270, 0, 540, backgroundHeight, 'background1'),
+        this.add.tileSprite(270, -backgroundHeight, 540, backgroundHeight, 'background2'),
+        this.add.tileSprite(270, -2 * backgroundHeight, 540, backgroundHeight, 'background3')
+    ];
 
     player = this.physics.add.sprite(270, 900, 'player');
     player.setCollideWorldBounds(true);
-    player.setScale(0.05);
+    player.setScale(0.06);
 
     cursors = this.input.keyboard.createCursorKeys();
 
@@ -124,7 +135,19 @@ function create() {
 function update() {
     if (gameOver) return;
 
-    background.tilePositionY -= backgroundSpeed;
+    // Move all backgrounds down
+    backgrounds.forEach(bg => {
+        bg.y += backgroundSpeed;
+    });
+
+    // Check if we need to transition to the next background
+    if (backgrounds[currentBackgroundIndex].y >= backgroundHeight) {
+        // Move the current background to the end
+        backgrounds[currentBackgroundIndex].y = backgrounds[(currentBackgroundIndex + 2) % 3].y - backgroundHeight;
+        
+        // Update the current background index
+        currentBackgroundIndex = (currentBackgroundIndex + 1) % 3;
+    }
 
     if (isMobile) {
         // Mobile controls
@@ -219,23 +242,46 @@ function onTouchEnd() {
 
 function spawnEnemy() {
     if (gameOver) return;
-    const x = Phaser.Math.Between(25, 515);
-    const enemyType = Phaser.Utils.Array.GetRandom(enemyTypes);
-    console.log(`Attempting to spawn enemy: ${enemyType.key}`);
-    const enemy = enemies.create(x, 0, enemyType.key);
-    if (!enemy.texture.key) {
-        console.error(`Failed to create enemy with key: ${enemyType.key}`);
-        enemy.destroy();
-        return;
+
+    const minSpacing = 50; // Minimum spacing between enemies
+    let attempts = 0;
+    const maxAttempts = 10; // Maximum number of attempts to find a free spot
+
+    while (attempts < maxAttempts) {
+        const x = Phaser.Math.Between(25, 515);
+        const enemyType = Phaser.Utils.Array.GetRandom(enemyTypes);
+        
+        // Check if the spot is free
+        let spotIsFree = true;
+        enemies.children.entries.forEach((existingEnemy) => {
+            if (Math.abs(existingEnemy.x - x) < minSpacing && existingEnemy.y < 100) {
+                spotIsFree = false;
+            }
+        });
+
+        if (spotIsFree) {
+            console.log(`Attempting to spawn enemy: ${enemyType.key}`);
+            const enemy = enemies.create(x, 0, enemyType.key);
+            if (!enemy.texture.key) {
+                console.error(`Failed to create enemy with key: ${enemyType.key}`);
+                enemy.destroy();
+                return;
+            }
+            console.log(`Successfully spawned enemy: ${enemyType.key}`);
+            enemy.setScale(enemyType.scale);
+            enemy.body.setVelocityY(enemyType.speed);
+            enemy.shootInterval = enemyType.shootInterval;
+            enemy.bulletSpeed = enemyType.bulletSpeed;
+            enemy.bulletColor = enemyType.bulletColor;
+            enemy.bulletScale = enemyType.bulletScale;
+            enemy.lastFired = this.time.now + Phaser.Math.Between(0, enemyType.shootInterval);
+            return; // Successfully spawned an enemy, exit the function
+        }
+
+        attempts++;
     }
-    console.log(`Successfully spawned enemy: ${enemyType.key}`);
-    enemy.setScale(enemyType.scale);
-    enemy.body.setVelocityY(enemyType.speed);
-    enemy.shootInterval = enemyType.shootInterval;
-    enemy.bulletSpeed = enemyType.bulletSpeed;
-    enemy.bulletColor = enemyType.bulletColor;
-    enemy.bulletScale = enemyType.bulletScale;
-    enemy.lastFired = this.time.now + Phaser.Math.Between(0, enemyType.shootInterval);
+
+    console.log("Failed to find a free spot to spawn an enemy after " + maxAttempts + " attempts");
 }
 
 function createExplosion(x, y) {
@@ -310,4 +356,10 @@ function respawnPlayer() {
             text.destroy();
         }
     });
+
+    // Reset backgrounds
+    backgrounds[0].y = 0;
+    backgrounds[1].y = -backgroundHeight;
+    backgrounds[2].y = -2 * backgroundHeight;
+    currentBackgroundIndex = 0;
 }
