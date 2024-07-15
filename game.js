@@ -17,19 +17,11 @@ let touchX, touchY;
 let isFiring = false;
 
 const enemyTypes = [
-<<<<<<< HEAD
     { key: 'nebulaWraith', scale: 0.1, speed: 40, shootInterval: 2500, bulletSpeed: 120 },
     { key: 'plasmaBeetle', scale: 0.15, speed: 60, shootInterval: 1800, bulletSpeed: 150 },
     { key: 'voidWalker', scale: 0.12, speed: 30, shootInterval: 3000, bulletSpeed: 100 },
     { key: 'darkStinger', scale: 0.12, speed: 70, shootInterval: 1500, bulletSpeed: 180 },
     { key: 'meteorCrusher', scale: 0.11, speed: 20, shootInterval: 3500, bulletSpeed: 90 }
-=======
-    { key: 'nebulaWraith', scale: 0.12, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120 },
-    { key: 'plasmaBeetle', scale: 0.18, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150 },
-    { key: 'voidWalker', scale: 0.15, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100 },
-    { key: 'darkStinger', scale: 0.15, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180 },
-    { key: 'meteorCrusher', scale: 0.13, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90 }
->>>>>>> d24b3791a5d2fc9692b28467d782fc808d8b71cd
 ];
 
 // Game configuration
