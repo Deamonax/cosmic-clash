@@ -11,20 +11,27 @@ let background;
 let backgroundSpeed = 2;
 let particleManager;
 let explosions = []; // Array to keep track of active explosions
+let isMobile = false;
+let joyStick;
+let shootButton;
 
 const enemyTypes = [
     { key: 'nebulaWraith', scale: 0.12, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120 },
     { key: 'plasmaBeetle', scale: 0.18, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150 },
     { key: 'voidWalker', scale: 0.15, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100 },
     { key: 'darkStinger', scale: 0.15, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180 },
-    { key: 'MeteorCrusher', scale: 0.13, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90 }
+    { key: 'meteorCrusher', scale: 0.13, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90 }
 ];
 
 // Game configuration
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 800,
+        height: 600
+    },
     scene: {
         preload: preload,
         create: create,
@@ -35,6 +42,13 @@ const config = {
         arcade: {
             gravity: { y: 0 }
         }
+    },
+    plugins: {
+        scene: [{
+            key: 'rexVirtualJoystick',
+            plugin: window.rexvirtualjoystickplugin,
+            mapping: 'rexVirtualJoystick'
+        }]
     }
 };
 
@@ -45,10 +59,9 @@ function preload() {
     console.log("Preload function started");
     this.load.image('background', 'assets/background.png');
     this.load.image('player', 'assets/player.png');
-    
-    // Load SVG file for bullet
     this.load.svg('bullet', 'assets/shoot.svg');
     this.load.svg('particle', 'assets/particle.svg');
+    this.load.image('shootButton', 'assets/button.png');
     
     enemyTypes.forEach(enemy => {
         const fileName = `assets/${enemy.key}.png`; 
@@ -84,9 +97,27 @@ function create() {
         loop: true
     });
 
-    // Create particle manager
     particleManager = this.add.particles('particle');
-    
+
+    // Check if the game is running on a mobile device
+    isMobile = !this.sys.game.device.os.desktop;
+
+    if (isMobile) {
+        // Create virtual joystick
+        joyStick = this.rexVirtualJoystick.add(this, {
+            x: 100,
+            y: 500,
+            radius: 50,
+            base: this.add.circle(0, 0, 50, 0x888888),
+            thumb: this.add.circle(0, 0, 25, 0xcccccc),
+        });
+
+        // Create shoot button
+        shootButton = this.add.image(700, 500, 'shootButton')
+            .setInteractive()
+            .on('pointerdown', shoot, this);
+    }
+
     // Check if all textures loaded correctly
     ['bullet', 'particle', ...enemyTypes.map(e => e.key)].forEach(key => {
         if (this.textures.exists(key)) {
@@ -102,32 +133,38 @@ function update() {
 
     background.tilePositionY -= backgroundSpeed;
 
-    player.setVelocity(0);
-    if (cursors.left.isDown) {
-        player.setVelocityX(-100);
-    } else if (cursors.right.isDown) {
-        player.setVelocityX(100);
-    }
-    if (cursors.up.isDown) {
-        player.setVelocityY(-100);
-    } else if (cursors.down.isDown) {
-        player.setVelocityY(100);
-    }
+    if (isMobile) {
+        // Mobile controls
+        if (joyStick.force) {
+            player.setVelocity(joyStick.forceX * 100, joyStick.forceY * 100);
+        } else {
+            player.setVelocity(0);
+        }
+    } else {
+        // Desktop controls
+        player.setVelocity(0);
+        if (cursors.left.isDown) {
+            player.setVelocityX(-100);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(100);
+        }
+        if (cursors.up.isDown) {
+            player.setVelocityY(-100);
+        } else if (cursors.down.isDown) {
+            player.setVelocityY(100);
+        }
 
-    if (cursors.space.isDown && this.time.now > (player.lastFired || 0)) {
-        let bullet = bullets.create(player.x, player.y - 20, 'bullet');
-        bullet.setVelocityY(-200);
-        bullet.setScale(.5);  // Adjust this value based on your SVG size
-        bullet.setTint(0xFF0000);  // Set player bullets to red
-        player.lastFired = this.time.now + 200;
+        if (cursors.space.isDown && this.time.now > (player.lastFired || 0)) {
+            shoot.call(this);
+        }
     }
 
     enemies.children.entries.forEach((enemy) => {
         if (this.time.now > enemy.lastFired) {
             let bullet = enemyBullets.create(enemy.x, enemy.y + 20, 'bullet');
             bullet.setVelocityY(enemy.bulletSpeed);
-            bullet.setScale(0.25);  // Adjust this value based on your SVG size
-            bullet.setTint(0x00FF00);  // Set enemy bullets to green
+            bullet.setScale(0.25);
+            bullet.setTint(0x00FF00);
             enemy.lastFired = this.time.now + enemy.shootInterval;
         }
     });
@@ -149,10 +186,20 @@ function update() {
 
     // Remove enemies that have gone far off-screen
     enemies.children.entries.forEach((enemy) => {
-        if (enemy.y > 800) { // Adjust this value as needed
+        if (enemy.y > 800) {
             enemy.destroy();
         }
     });
+}
+
+function shoot() {
+    if (this.time.now > (player.lastFired || 0)) {
+        let bullet = bullets.create(player.x, player.y - 20, 'bullet');
+        bullet.setVelocityY(-200);
+        bullet.setScale(.5);
+        bullet.setTint(0xFF0000);
+        player.lastFired = this.time.now + 200;
+    }
 }
 
 function spawnEnemy() {
@@ -168,8 +215,7 @@ function spawnEnemy() {
     }
     console.log(`Successfully spawned enemy: ${enemyType.key}`);
     enemy.setScale(enemyType.scale);
-    enemy.setVelocityY(enemyType.speed);
-    enemy.health = enemyType.health;
+    enemy.body.setVelocityY(enemyType.speed);
     enemy.shootInterval = enemyType.shootInterval;
     enemy.bulletSpeed = enemyType.bulletSpeed;
     enemy.lastFired = this.time.now + Phaser.Math.Between(0, enemyType.shootInterval);
@@ -197,20 +243,17 @@ function createExplosion(x, y) {
 
 function bulletHitEnemy(bullet, enemy) {
     bullet.destroy();
-    enemy.health--;
-    if (enemy.health <= 0) {
-        createExplosion.call(this, enemy.x, enemy.y); // Create explosion effect
-        enemy.destroy();
-        score += 10;
-        scoreText.setText('Score: ' + score);
-    }
+    createExplosion.call(this, enemy.x, enemy.y);
+    enemy.destroy();
+    score += 10;
+    scoreText.setText('Score: ' + score);
 }
 
 function playerHitEnemy(player, enemy) {
     gameOver = true;
     this.physics.pause();
     player.setTint(0xff0000);
-    createExplosion.call(this, player.x, player.y); // Create explosion effect for player
+    createExplosion.call(this, player.x, player.y);
     this.add.text(400, 300, 'Game Over', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 }
 
