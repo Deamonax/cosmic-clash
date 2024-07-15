@@ -18,14 +18,14 @@ let respawnButton;
 
 let backgrounds = [];
 let currentBackgroundIndex = 0;
-let backgroundHeight = 1920; // Assuming each background is 1920 pixels tall (twice the screen height)
+let backgroundHeight = 2720; // Assuming each background is 1920 pixels tall (twice the screen height)
 
 const enemyTypes = [
-    { key: 'nebulaWraith', scale: 0.42, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF0000, bulletScale: 0.4 },
-    { key: 'plasmaBeetle', scale: 0.38, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150, bulletColor: 0x00FF00, bulletScale: 0.3 },
+    { key: 'nebulaWraith', scale: 0.42, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF8000, bulletScale: 0.6 },
+    { key: 'plasmaBeetle', scale: 0.38, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150, bulletColor: 0x00FF00, bulletScale: 0.5 },
     { key: 'voidWalker', scale: 0.25, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100, bulletColor: 0x0000FF, bulletScale: 0.4 },
     { key: 'darkStinger', scale: 0.52, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180, bulletColor: 0xFFFF00, bulletScale: 0.5 },
-    { key: 'meteorCrusher', scale: 0.23, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90, bulletColor: 0xFF00FF, bulletScale: 0.35 }
+    { key: 'meteorCrusher', scale: 0.23, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90, bulletColor: 0xFF00FF, bulletScale: 0.6 }
 ];
 
 // Game configuration
