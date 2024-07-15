@@ -17,7 +17,7 @@ const enemyTypes = [
     { key: 'plasmaBeetle', scale: 0.18, speed: 60, health: 1, shootInterval: 1800, bulletSpeed: 150 },
     { key: 'voidWalker', scale: 0.15, speed: 30, health: 3, shootInterval: 3000, bulletSpeed: 100 },
     { key: 'darkStinger', scale: 0.15, speed: 70, health: 1, shootInterval: 1500, bulletSpeed: 180 },
-    { key: 'MeteorCrusher', scale: 0.13, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90 }
+    { key: 'meteorCrusher', scale: 0.13, speed: 20, health: 4, shootInterval: 3500, bulletSpeed: 90 }
 ];
 
 // Game configuration
