@@ -8,7 +8,7 @@ const ENEMY_SPAWN_DELAY = 1000;
 const FIRE_DELAY = 200;
 const EXPLOSION_PARTICLE_COUNT = 20;
 const EXPLOSION_DURATION = 1000;
-const POINTS_PER_LEVEL = 50;
+const POINTS_PER_LEVEL = 250;
 
 const ENEMY_TYPES = [
     { key: 'nebulaWraith', scale: 0.42, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF8000, bulletScale: 0.6 },
