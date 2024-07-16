@@ -8,6 +8,7 @@ const ENEMY_SPAWN_DELAY = 1000;
 const FIRE_DELAY = 200;
 const EXPLOSION_PARTICLE_COUNT = 20;
 const EXPLOSION_DURATION = 1000;
+const POINTS_PER_LEVEL = 50;
 
 const ENEMY_TYPES = [
     { key: 'nebulaWraith', scale: 0.42, speed: 40, health: 2, shootInterval: 2500, bulletSpeed: 120, bulletColor: 0xFF8000, bulletScale: 0.6 },
@@ -23,6 +24,10 @@ let backgrounds = [];
 let currentBackgroundIndex = 0;
 let backgroundMusic, soundIcon, isMusicPlaying = false;
 let startButton;
+let currentLevel = 1;
+let levelText;
+let canSpawnEnemies = false;
+let enemySpawnEvent = null;
 
 // Game configuration
 const config = {
@@ -59,7 +64,6 @@ function preload() {
         this.load.image(enemy.key, `assets/${enemy.key}.png`);
     });
 
-    // Load music and sound icons
     this.load.audio('backgroundMusic', 'assets/music.mp3');
     this.load.image('soundOn', 'assets/sound-on.png');
     this.load.image('soundOff', 'assets/sound-off.png');
@@ -74,7 +78,6 @@ function create() {
     setupCollisions(this);
     createStartButton(this);
     
-    // Don't start the game loop yet
     this.physics.pause();
 }
 
@@ -86,25 +89,29 @@ function update() {
     handleEnemyShooting(this);
     cleanupOffscreenObjects();
     cleanupExplosions(this);
+    checkLevelProgression(this);
 }
 
-// Initialization functions
 function initializeGameState(scene) {
     score = 0;
+    currentLevel = 1;
     gameOver = false;
     backgroundSpeed = 2;
     explosions = [];
     isMobile = !scene.sys.game.device.os.desktop;
     isTouching = false;
     isFiring = false;
+    canSpawnEnemies = false;
 }
 
 function createBackgrounds(scene) {
     backgrounds = [
-        scene.add.tileSprite(GAME_WIDTH / 2, 0, GAME_WIDTH, BACKGROUND_HEIGHT, 'background1'),
-        scene.add.tileSprite(GAME_WIDTH / 2, -BACKGROUND_HEIGHT, GAME_WIDTH, BACKGROUND_HEIGHT, 'background2'),
-        scene.add.tileSprite(GAME_WIDTH / 2, -2 * BACKGROUND_HEIGHT, GAME_WIDTH, BACKGROUND_HEIGHT, 'background3')
+        scene.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'background1'),
+        scene.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'background2'),
+        scene.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'background3')
     ];
+    backgrounds[1].setVisible(false);
+    backgrounds[2].setVisible(false);
 }
 
 function createPlayer(scene) {
@@ -122,6 +129,7 @@ function createEnemies(scene) {
 
 function createUI(scene) {
     scoreText = scene.add.text(16, 16, 'Score: 0', { fontSize: '16px', fill: '#fff' });
+    levelText = scene.add.text(16, 40, 'Level: 1', { fontSize: '16px', fill: '#fff' });
     particleManager = scene.add.particles('particle');
 }
 
@@ -150,16 +158,12 @@ function startGame(scene) {
     setupAudioContext(scene);
     setupBackgroundMusic(scene);
     createSoundToggle(scene);
+    canSpawnEnemies = true;
+    startEnemySpawning(scene);
+    console.log("Game started, enemy spawning enabled");
 }
 
 function setupEvents(scene) {
-    scene.time.addEvent({
-        delay: ENEMY_SPAWN_DELAY,
-        callback: spawnEnemy,
-        callbackScope: scene,
-        loop: true
-    });
-
     scene.time.addEvent({
         delay: FIRE_DELAY,
         callback: () => tryToFire(scene),
@@ -183,7 +187,6 @@ function setupAudioContext(scene) {
 
 function setupBackgroundMusic(scene) {
     backgroundMusic = scene.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
-    // Don't autoplay the music
 }
 
 function createSoundToggle(scene) {
@@ -194,15 +197,12 @@ function createSoundToggle(scene) {
     soundIcon.on('pointerdown', () => toggleMusic(scene));
 }
 
-// Update functions
 function updateBackgrounds() {
-    backgrounds.forEach(bg => {
-        bg.y += backgroundSpeed;
-        if (bg.y >= BACKGROUND_HEIGHT) {
-            bg.y = backgrounds[(backgrounds.indexOf(bg) + 2) % 3].y - BACKGROUND_HEIGHT;
-        }
-    });
-    currentBackgroundIndex = backgrounds.findIndex(bg => bg.y < BACKGROUND_HEIGHT && bg.y >= 0);
+    backgrounds[currentBackgroundIndex].tilePositionY -= backgroundSpeed;
+    
+    if (backgrounds[currentBackgroundIndex].tilePositionY <= -BACKGROUND_HEIGHT) {
+        backgrounds[currentBackgroundIndex].tilePositionY = 0;
+    }
 }
 
 function handlePlayerMovement() {
@@ -258,7 +258,6 @@ function cleanupExplosions(scene) {
     }
 }
 
-// Gameplay functions
 function tryToFire(scene) {
     if (isFiring && !gameOver) {
         let bullet = bullets.create(player.x, player.y - 20, 'bullet');
@@ -268,8 +267,24 @@ function tryToFire(scene) {
     }
 }
 
-function spawnEnemy() {
-    if (gameOver) return;
+function startEnemySpawning(scene) {
+    if (enemySpawnEvent) {
+        enemySpawnEvent.remove();
+    }
+    enemySpawnEvent = scene.time.addEvent({
+        delay: ENEMY_SPAWN_DELAY,
+        callback: () => spawnEnemy(scene),
+        callbackScope: scene,
+        loop: true
+    });
+    console.log("Enemy spawning event created");
+}
+
+function spawnEnemy(scene) {
+    if (gameOver || !canSpawnEnemies) {
+        console.log("Skipping enemy spawn: gameOver =", gameOver, "canSpawnEnemies =", canSpawnEnemies);
+        return;
+    }
 
     const minSpacing = 50;
     const maxAttempts = 10;
@@ -285,7 +300,8 @@ function spawnEnemy() {
                 enemy.destroy();
                 return;
             }
-            setupEnemy(enemy, enemyType, this);
+            setupEnemy(enemy, enemyType, scene);
+            console.log("Enemy spawned at", x);
             return;
         }
     }
@@ -300,11 +316,12 @@ function isSpotFree(x, minSpacing) {
 }
 
 function setupEnemy(enemy, enemyType, scene) {
+    const speedMultiplier = 1 + (currentLevel - 1) * 0.5;
     enemy.setScale(enemyType.scale);
-    enemy.body.setVelocityY(enemyType.speed);
+    enemy.body.setVelocityY(enemyType.speed * speedMultiplier);
     Object.assign(enemy, {
-        shootInterval: enemyType.shootInterval,
-        bulletSpeed: enemyType.bulletSpeed,
+        shootInterval: enemyType.shootInterval / speedMultiplier,
+        bulletSpeed: enemyType.bulletSpeed * speedMultiplier,
         bulletColor: enemyType.bulletColor,
         bulletScale: enemyType.bulletScale,
         lastFired: scene.time.now + Phaser.Math.Between(0, enemyType.shootInterval)
@@ -364,11 +381,14 @@ function playerHitBullet(player, bullet) {
 
 function respawnPlayer() {
     gameOver = false;
-    this.physics.resume();
+    this.physics.pause();
+    canSpawnEnemies = false;
     player.clearTint();
     player.setPosition(GAME_WIDTH / 2, GAME_HEIGHT - 60);
     score = 0;
+    currentLevel = 1;
     scoreText.setText('Score: 0');
+    levelText.setText('Level: 1');
     respawnButton.destroy();
     
     enemies.clear(true, true);
@@ -382,16 +402,25 @@ function respawnPlayer() {
     });
 
     resetBackgrounds();
+
+    console.log("Player respawned, pausing enemy spawning");
+
+    setTimeout(() => {
+        this.physics.resume();
+        canSpawnEnemies = true;
+        startEnemySpawning(this);
+        console.log("Resuming enemy spawning after respawn");
+    }, 2000);
 }
 
 function resetBackgrounds() {
-    backgrounds[0].y = 0;
-    backgrounds[1].y = -BACKGROUND_HEIGHT;
-    backgrounds[2].y = -2 * BACKGROUND_HEIGHT;
+    backgrounds.forEach((bg, index) => {
+        bg.tilePositionY = 0;
+        bg.setVisible(index === 0);
+    });
     currentBackgroundIndex = 0;
 }
 
-// Input handling for mobile
 function onTouchStart(pointer) {
     isTouching = true;
     isFiring = true;
@@ -421,3 +450,53 @@ function toggleMusic(scene) {
         soundIcon.setTexture('soundOff');
     }
 }
+
+function checkLevelProgression(scene) {
+    const newLevel = Math.floor(score / POINTS_PER_LEVEL) + 1;
+    if (newLevel > currentLevel) {
+        currentLevel = newLevel;
+        levelUp(scene);
+    }
+}
+
+function levelUp(scene) {
+    canSpawnEnemies = false;
+    scene.physics.pause();
+
+    enemies.clear(true, true);
+    enemyBullets.clear(true, true);
+    bullets.clear(true, true);
+
+    const levelUpText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, `Level ${currentLevel}`, {
+        fontSize: '64px',
+        fill: '#fff',
+        backgroundColor: '#000',
+        padding: { x: 20, y: 10 }
+    }).setOrigin(0.5);
+
+    levelText.setText(`Level: ${currentLevel}`);
+    changeBackground(scene);
+
+    console.log("Level up, pausing enemy spawning");
+
+    setTimeout(() => {
+        levelUpText.destroy();
+        scene.physics.resume();
+        
+        setTimeout(() => {
+            canSpawnEnemies = true;
+            startEnemySpawning(scene);
+            console.log("Resuming enemy spawning after level up");
+        }, 1000);
+    }, 2000);
+}
+
+function changeBackground(scene) {
+    backgrounds[currentBackgroundIndex].setVisible(false);
+    currentBackgroundIndex = (currentBackgroundIndex + 1) % backgrounds.length;
+    backgrounds[currentBackgroundIndex].setVisible(true);
+    backgrounds[currentBackgroundIndex].tilePositionY = 0;
+}
+
+// Export any necessary functions or variables if needed
+// export { game };
